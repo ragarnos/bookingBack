@@ -2,7 +2,10 @@
 const offer = require("./variables.js");
 const func = require("./util.js");
 const http = require("http");
+const path = require('path');
 const fs = require("fs");
+const os = require("os");
+const busboy = require('busboy');
 // function generationOffer(index){
 //     return {  
 //         id: index + 1,
@@ -33,40 +36,115 @@ const fs = require("fs");
 
 // fs.writeFileSync("offert.txt", JSON.stringify(HotelDataOffer));
 
-
+function generatorOfferForm(arrayData) {
+    return   {
+                    id: func.getRandomInt(1, 5000),
+                    author: {
+                        avatar: arrayData.avatar
+                    },
+                    hotelOffer: {
+                        title: arrayData.title,
+                        description: arrayData.description,
+                        photos: [arrayData.photos],
+                        address: `${arrayData.locationX}, ${arrayData.locationY}`,
+                        price: arrayData.price,
+                        type: arrayData.type,
+                        rooms: arrayData.rooms,
+                        guests: arrayData.guests,
+                        checkin: arrayData.checkin,
+                        checkout: arrayData.checkout,
+                        Features: arrayData.Features.split(','),
+                        location: {
+                            x: arrayData.locationX,
+                            y: arrayData.locationY
+                        }
+                    }
+                }
+}
+let houseArray = {};
 http.createServer((req, res) =>{
+    console.log(req);
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, UPDATE");
-    res.writeHead(200, { "Content-Type": "application/json" });
+    // res.writeHead(200, { "Content-Type": "application/json" });
     const url = req.url;
-    let body = "";
 
     if (req.method === "POST"){
         console.log('попал в пост');
         if (url === "/offert") {
-            req.on("data", (data) =>{
-                body += data.toString(); 
-            });
-            req.on("end", () => {
-                if(fs.readFileSync("offert.txt").toString('utf-8') == ''){
-                    fs.writeFileSync("offert.txt", JSON.stringify(body));
+// фото
+    const bb = busboy({ headers: req.headers });
+        bb.on('file', (name, file, info) => {
+            if(name == 'avatar'){
+                const saveTo = path.join('img/avatars', `${Math.random().toString(36).substr(2, 15)}.jpg`);
+                houseArray[name] = `http://${req.headers.host}/`+saveTo;
+                file.pipe(fs.createWriteStream(saveTo));
+            }else{
+                const saveTo = path.join('img/house', `${Math.random().toString(36).substr(2, 15)}.jpg`);
+                houseArray[name] = `http://${req.headers.host}/`+saveTo;
+                file.pipe(fs.createWriteStream(saveTo));
+            }
+            
+            
+        file.on('data', (data) => {
+            // console.log(`File [${name}] got ${data.length} bytes`);
+        }).on('close', () => {
+            // console.log(`File [${name}] done`);
+        });
+        });
+        
+        bb.on('field', (name, val, info) => {
+            houseArray[name] = val;
+        });
+        
+        bb.on('close', () => {
+           const HotelDataOffer = generatorOfferForm(houseArray); 
+
+           if(fs.readFileSync("offert.txt").toString('utf-8') == ''){
+                    fs.writeFileSync("offert.txt", JSON.stringify([HotelDataOffer]));
                 }else{
-                    const bodyNew = JSON.parse(body);
+                    const bodyNew = HotelDataOffer;
                     const PhotoUOffer = JSON.parse(fs.readFileSync("offert.txt"));;
                     PhotoUOffer.push(bodyNew);
                     fs.writeFileSync("offert.txt", JSON.stringify(PhotoUOffer));
                 }
-            });
-            res.write(fs.readFileSync("offert.txt"));
-            res.end();
+            // res.write(fs.readFileSync("offert.txt"));
+        res.end();
+    });
+    req.pipe(bb);
+// фото енд
+
+
+            // req.on("data", (data) =>{
+            //     body += data.stringify(); 
+            // });
+            // req.on("end", () => {
+            //     if(fs.readFileSync("offert.txt").toString('utf-8') == ''){
+            //         fs.writeFileSync("offert.txt", JSON.stringify(body));
+            //     }else{
+            //         const bodyNew = JSON.parse(body);
+            //         const PhotoUOffer = JSON.parse(fs.readFileSync("offert.txt"));;
+            //         PhotoUOffer.push(bodyNew);
+            //         fs.writeFileSync("offert.txt", JSON.stringify(PhotoUOffer));
+            //     }
+            // });
+            // res.write(fs.readFileSync("offert.txt"));
+            // res.end();
         }
     }else if (req.method === "GET"){
         console.log('попал в ГЕТ');
         if(url === "/offert"){
             const HotelResult = fs.readFileSync("offert.txt", "utf-8");
             res.end(HotelResult);
-        }else if(HotelResult.status !== 200){
-            res.end("Unable to find this photo")
         }
     }
+    let filePath = path.join(process.cwd(),url)
+    let contentType = 'text/html';
+
+    fs.readFile(filePath, (error, data) => {
+        if (error) return
+        
+        res.writeHead(200, { 'Content-Type':  contentType })
+        res.end(data, 'utf8')
+    
+    })
 }).listen(3001);
