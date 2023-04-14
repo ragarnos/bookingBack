@@ -63,7 +63,6 @@ function generatorOfferForm(arrayData) {
 }
 let houseArray = {};
 http.createServer((req, res) =>{
-    console.log(req);
     res.setHeader("Access-Control-Allow-Origin", "*");
     // res.writeHead(200, { "Content-Type": "application/json" });
     const url = req.url;
@@ -113,22 +112,6 @@ http.createServer((req, res) =>{
     req.pipe(bb);
 // фото енд
 
-
-            // req.on("data", (data) =>{
-            //     body += data.stringify(); 
-            // });
-            // req.on("end", () => {
-            //     if(fs.readFileSync("offert.txt").toString('utf-8') == ''){
-            //         fs.writeFileSync("offert.txt", JSON.stringify(body));
-            //     }else{
-            //         const bodyNew = JSON.parse(body);
-            //         const PhotoUOffer = JSON.parse(fs.readFileSync("offert.txt"));;
-            //         PhotoUOffer.push(bodyNew);
-            //         fs.writeFileSync("offert.txt", JSON.stringify(PhotoUOffer));
-            //     }
-            // });
-            // res.write(fs.readFileSync("offert.txt"));
-            // res.end();
         }
     }else if (req.method === "GET"){
         console.log('попал в ГЕТ');
